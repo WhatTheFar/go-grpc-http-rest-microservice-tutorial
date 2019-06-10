@@ -1,0 +1,18 @@
+version: '3.2'
+
+services:
+  backend:
+    image: grpc-backend
+    container_name: grpc-backend
+    depends_on:
+      - db
+  db:
+    image: mysql:5.7
+    container_name: grpc-db
+    volumes:
+      - ./volumes/database:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: grpc
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password

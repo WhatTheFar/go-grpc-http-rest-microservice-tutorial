@@ -1,0 +1,17 @@
+version: '3.2'
+
+services:
+  backend:
+    image: grpc-backend-dev
+    container_name: grpc-backend-dev
+    build:
+      context: .
+      dockerfile: build/package/Dockerfile.dev
+      args: 
+        GO_VERSION: 1.11.2
+    volumes:
+      - .:/src
+    ports:
+      - 8080:8080
+      - 9090:9090
+    command: sh -c "cd cmd/server && go run -mod vendor main.go -env=develop"
