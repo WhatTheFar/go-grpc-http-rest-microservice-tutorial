@@ -1,0 +1,18 @@
+debug: true
+protocol:
+  grpc:
+    address: 0.0.0.0
+    port: 8080
+  http:
+    address: 0.0.0.0
+    port: 9090
+database:
+  mysqlDB:
+    host: db:3306
+    username: user
+    password: password
+    dbName: grpc
+    sslMode: false
+logging:
+  logLevel: -1
+  logTimeFormat: 2006-01-02T15:04:05.999999999Z07:00

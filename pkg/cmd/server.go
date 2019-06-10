@@ -9,37 +9,15 @@ import (
 	// mysql driver
 	_ "github.com/go-sql-driver/mysql"
 
+	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/config"
 	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/logger"
 	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/protocol/grpc"
 	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/protocol/rest"
 	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/service/v1"
 )
 
-// Config is configuration for Server
 type Config struct {
-	// gRPC server start parameters section
-	// GRPCPort is TCP port to listen by gRPC server
-	GRPCPort string
-
-	// HTTP/REST gateway start parameters section
-	// HTTPPort is TCP port to listen by HTTP/REST gateway
-	HTTPPort string
-
-	// DB Datastore parameters section
-	// DatastoreDBHost is host of database
-	DatastoreDBHost string
-	// DatastoreDBUser is username to connect to database
-	DatastoreDBUser string
-	// DatastoreDBPassword password to connect to database
-	DatastoreDBPassword string
-	// DatastoreDBSchema is schema of database
-	DatastoreDBSchema string
-
-	// Log parameters section
-	// LogLevel is global log level: Debug(-1), Info(0), Warn(1), Error(2), DPanic(3), Panic(4), Fatal(5)
-	LogLevel int
-	// LogTimeFormat is print time format for logger e.g. 2006-01-02T15:04:05Z07:00
-	LogTimeFormat string
+	Env string
 }
 
 // RunServer runs gRPC server and HTTP gateway
@@ -48,27 +26,21 @@ func RunServer() error {
 
 	// get configuration
 	var cfg Config
-	flag.StringVar(&cfg.GRPCPort, "grpc-port", "", "gRPC port to bind")
-	flag.StringVar(&cfg.HTTPPort, "http-port", "", "HTTP port to bind")
-	flag.StringVar(&cfg.DatastoreDBHost, "db-host", "", "Database host")
-	flag.StringVar(&cfg.DatastoreDBUser, "db-user", "", "Database user")
-	flag.StringVar(&cfg.DatastoreDBPassword, "db-password", "", "Database password")
-	flag.StringVar(&cfg.DatastoreDBSchema, "db-schema", "", "Database schema")
-	flag.IntVar(&cfg.LogLevel, "log-level", 0, "Global log level")
-	flag.StringVar(&cfg.LogTimeFormat, "log-time-format", "",
-		"Print time format for logger e.g. 2006-01-02T15:04:05Z07:00")
+	flag.StringVar(&cfg.Env, "env", "", "environment to build")
 	flag.Parse()
+	config.InitViper("../../config", cfg.Env)
+	v := config.GetViper()
 
-	if len(cfg.GRPCPort) == 0 {
-		return fmt.Errorf("invalid TCP port for gRPC server: '%s'", cfg.GRPCPort)
+	if len(v.Protocol.Grpc.Port) == 0 {
+		return fmt.Errorf("invalid TCP port for gRPC server: '%s'", v.Protocol.Grpc.Port)
 	}
 
-	if len(cfg.HTTPPort) == 0 {
-		return fmt.Errorf("invalid TCP port for HTTP gateway: '%s'", cfg.HTTPPort)
+	if len(v.Protocol.Http.Port) == 0 {
+		return fmt.Errorf("invalid TCP port for HTTP gateway: '%s'", v.Protocol.Http.Port)
 	}
 
 	// initialize logger
-	if err := logger.Init(cfg.LogLevel, cfg.LogTimeFormat); err != nil {
+	if err := logger.Init(v.Logging.LogLevel, v.Logging.LogTimeFormat); err != nil {
 		return fmt.Errorf("failed to initialize logger: %v", err)
 	}
 
@@ -77,10 +49,10 @@ func RunServer() error {
 	param := "parseTime=true"
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?%s",
-		cfg.DatastoreDBUser,
-		cfg.DatastoreDBPassword,
-		cfg.DatastoreDBHost,
-		cfg.DatastoreDBSchema,
+		v.Database.MySqlDB.Username,
+		v.Database.MySqlDB.Password,
+		v.Database.MySqlDB.Host,
+		v.Database.MySqlDB.DBName,
 		param)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -92,8 +64,8 @@ func RunServer() error {
 
 	// run HTTP gateway
 	go func() {
-		_ = rest.RunServer(ctx, cfg.GRPCPort, cfg.HTTPPort)
+		_ = rest.RunServer(ctx, v.Protocol.Grpc.Port, v.Protocol.Http.Port)
 	}()
 
-	return grpc.RunServer(ctx, v1API, cfg.GRPCPort)
+	return grpc.RunServer(ctx, v1API, v.Protocol.Grpc.Port)
 }
