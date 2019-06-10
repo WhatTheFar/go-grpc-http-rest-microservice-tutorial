@@ -13,7 +13,7 @@ import (
 	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/logger"
 	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/protocol/grpc"
 	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/protocol/rest"
-	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/service/v1"
+	v1 "github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/service/v1"
 )
 
 type Config struct {
@@ -61,11 +61,12 @@ func RunServer() error {
 	defer db.Close()
 
 	v1API := v1.NewToDoServiceServer(db)
+	v1HealthAPI := v1.NewHealthcheckServiceServer()
 
 	// run HTTP gateway
 	go func() {
 		_ = rest.RunServer(ctx, v.Protocol.Grpc.Port, v.Protocol.Http.Port)
 	}()
 
-	return grpc.RunServer(ctx, v1API, v.Protocol.Grpc.Port)
+	return grpc.RunServer(ctx, v1API, v1HealthAPI, v.Protocol.Grpc.Port)
 }

@@ -56,7 +56,6 @@ func InitViper(currentPath string, env string) {
 	}
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(currentPath)
-	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)

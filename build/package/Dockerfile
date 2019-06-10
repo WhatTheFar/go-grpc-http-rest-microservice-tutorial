@@ -36,8 +36,13 @@ RUN CGO_ENABLED=0 go build \
     -installsuffix 'static' \
     -o /app/cmd/server cmd/server/main.go
 
+# Install grpc_health_probe
+RUN GRPC_HEALTH_PROBE_VERSION=v0.3.0 && \
+    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+    chmod +x /bin/grpc_health_probe
+
 # Final stage: the running container.
-FROM scratch AS final
+FROM alpine AS final
 
 # Import the user and group files from the first stage.
 COPY --from=builder /user/group /user/passwd /etc/
@@ -51,6 +56,8 @@ COPY --from=builder /app/cmd/server /app/cmd/server/
 COPY --from=builder /src/config/config.yaml /app/config/
 COPY --from=builder /src/config/dev-config.yaml /app/config/
 COPY --from=builder /src/config/staging-config.yaml /app/config/
+
+COPY --from=builder /bin/grpc_health_probe /bin/grpc_health_probe
 
 # Declare the port on which the webserver will be exposed.
 # As we're going to run the executable as an unprivileged user, we can't bind

@@ -8,13 +8,13 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/api/v1"
+	v1 "github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/api/v1"
 	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/logger"
 	"github.com/amsokol/go-grpc-http-rest-microservice-tutorial/pkg/protocol/grpc/middleware"
 )
 
 // RunServer runs gRPC service to publish ToDo service
-func RunServer(ctx context.Context, v1API v1.ToDoServiceServer, port string) error {
+func RunServer(ctx context.Context, v1API v1.ToDoServiceServer, v1HealthAPI v1.HealthServer, port string) error {
 	listen, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
@@ -29,6 +29,7 @@ func RunServer(ctx context.Context, v1API v1.ToDoServiceServer, port string) err
 	// register service
 	server := grpc.NewServer(opts...)
 	v1.RegisterToDoServiceServer(server, v1API)
+	v1.RegisterHealthServer(server, v1HealthAPI)
 
 	// graceful shutdown
 	c := make(chan os.Signal, 1)
