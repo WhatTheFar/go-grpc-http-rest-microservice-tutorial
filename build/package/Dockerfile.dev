@@ -6,3 +6,18 @@ FROM golang:${GO_VERSION}
 
 # Set the working directory outside $GOPATH to enable the support for modules.
 WORKDIR /src
+
+# Fetch dependencies first; they are less susceptible to change on every build
+# and will therefore be cached for speeding up the next build
+COPY ./go.mod ./go.sum ./
+# RUN go mod download
+
+# Import the code from the context.
+COPY ./ ./
+
+# Install grpc_health_probe
+RUN GRPC_HEALTH_PROBE_VERSION=v0.3.0 && \
+    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+    chmod +x /bin/grpc_health_probe
+
+CMD cd cmd/server && go run -mod vendor main.go

@@ -1,0 +1,8 @@
+name: grpc
+image: whatthefar/grpc-backend-dev:latest
+command:
+  - bash
+workdir: /src
+forward:
+  - 8080:8080
+  - 9090:9090
