@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc
+  template:
+    metadata:
+      labels:
+        app: grpc
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: grpc
+          image: whatthefar/grpc-backend:latest
+          resources:
+            requests:
+              cpu: 200m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+              cpu: 300m
+          ports:
+            - containerPort: 8080
+            - containerPort: 9090
+          readinessProbe:
+            exec:
+              command: ['/bin/grpc_health_probe', '-addr=:9090']
+            initialDelaySeconds: 10
+          livenessProbe:
+            exec:
+              command: ['/bin/grpc_health_probe', '-addr=:9090']
+            initialDelaySeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc
+spec:
+  selector:
+    app: grpc
+  ports:
+    - name: grpc
+      port: 9090
+      targetPort: 9090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: db
+          image: mysql:5.7
+          resources:
+            requests:
+              cpu: 200m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+              cpu: 300m
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_DATABASE
+              value: grpc
+            - name: MYSQL_USER
+              value: user
+            - name: MYSQL_PASSWORD
+              value: password
+            - name: MYSQL_ROOT_PASSWORD
+              value: password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  selector:
+    app: db
+  ports:
+    - name: grpc
+      port: 3306
+      targetPort: 3306

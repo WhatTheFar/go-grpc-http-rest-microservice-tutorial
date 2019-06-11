@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${PROJECT_NAME}
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ${PROJECT_NAME}
+  template:
+    metadata:
+      labels:
+        app: ${PROJECT_NAME}
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: ${PROJECT_NAME}
+          image: ${DOCKER_REPOSITORY}:${GIT_COMMIT}
+          resources:
+            requests:
+              cpu: 200m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+              cpu: 300m
+          ports:
+            - containerPort: 8080
+            - containerPort: 9090
+          readinessProbe:
+            exec:
+              command: ['/bin/grpc_health_probe', '-addr=:9090']
+            initialDelaySeconds: 10
+          livenessProbe:
+            exec:
+              command: ['/bin/grpc_health_probe', '-addr=:9090']
+            initialDelaySeconds: 10
+          # volumeMounts:
+          #   - mountPath: /app/cert/private
+          #     name: private
+          #     readOnly: true
+          #   - mountPath: /app/cert/public
+          #     name: public
+          #     readOnly: true
+          #   - mountPath: /app/cert/aes
+          #     name: aes-key
+          #     readOnly: true
+      # volumes:
+      #   - name: private
+      #     secret:
+      #       secretName: private-auth
+      #   - name: public
+      #     secret:
+      #       secretName: public-auth
+      #   - name: aes-key
+      #     secret:
+      #       secretName: aes-key-auth
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${PROJECT_NAME}
+spec:
+  selector:
+    app: ${PROJECT_NAME}
+  ports:
+    - name: grpc
+      port: 9090
+      targetPort: 9090
